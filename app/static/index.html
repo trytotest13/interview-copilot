@@ -96,6 +96,18 @@ const $ = (id) => document.getElementById(id);
 let sessionId = null, questions = [], qi = 0, grades = [], jd = "", resume = "";
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 let recog = null, recording = false;
+const esc = (s) => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+async function api(url, opts = {}) {
+  opts.headers = Object.assign({}, opts.headers, { "X-API-Token": localStorage.getItem("api_token") || "" });
+  const r = await fetch(url, opts);
+  if (r.status === 401) {
+    const t = prompt("This server needs an API token (API_TOKEN in its .env)");
+    if (t) { localStorage.setItem("api_token", t); location.reload(); }
+    throw new Error("unauthorized");
+  }
+  return r;
+}
 
 $("micBtn").disabled = !SR;
 if (!SR) $("micHint").textContent = "Speech recognition not supported in this browser — type your answer instead (Chrome/Edge have mic support).";
@@ -124,7 +136,7 @@ $("genBtn").addEventListener("click", async () => {
   const f = $("resumeFile").files[0];
   if (f) fd.set("resume_file", f);
   try {
-    const r = await fetch("/api/setup", { method: "POST", body: fd });
+    const r = await api("/api/setup", { method: "POST", body: fd });
     const d = await r.json();
     if (!r.ok) { $("setupErr").textContent = d.detail || "setup failed"; return; }
     sessionId = d.session_id; questions = d.questions;
@@ -149,7 +161,7 @@ function showQuestion() {
 $("gradeBtn").addEventListener("click", async () => {
   $("gradeBtn").disabled = true;
   try {
-    const r = await fetch("/api/grade", {
+    const r = await api("/api/grade", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ session_id: sessionId, question_id: questions[qi].id, answer: $("transcript").value }),
     });
@@ -160,8 +172,8 @@ $("gradeBtn").addEventListener("click", async () => {
     const badge = $("scoreBadge");
     badge.textContent = `${d.score}/10 — ${d.verdict}`;
     badge.className = "badge " + d.verdict;
-    $("strengths").innerHTML = d.strengths.map(s => `<li>${s}</li>`).join("") || "<li>—</li>";
-    $("improvements").innerHTML = d.improvements.map(s => `<li>${s}</li>`).join("") || "<li>—</li>";
+    $("strengths").innerHTML = d.strengths.map(s => `<li>${esc(s)}</li>`).join("") || "<li>—</li>";
+    $("improvements").innerHTML = d.improvements.map(s => `<li>${esc(s)}</li>`).join("") || "<li>—</li>";
     $("sample").textContent = d.sample_answer;
     $("running").textContent = `Running average: ${d.average} (${d.graded_count} graded)`;
     $("gradeBtn").classList.add("hidden");
@@ -174,12 +186,12 @@ $("nextBtn").addEventListener("click", async () => {
   qi += 1;
   if (qi < questions.length) { showQuestion(); return; }
   $("qa").classList.add("hidden");
-  const r = await fetch(`/api/report/${sessionId}`);
+  const r = await api(`/api/report/${sessionId}`);
   const d = await r.json();
   $("report").classList.remove("hidden");
   $("finalScore").textContent = `${d.average}/10`;
   $("finalDetail").textContent = `${d.questions_graded}/${d.questions_total} answers graded`;
-  $("themes").innerHTML = d.top_improvement_themes.map(t => `<li>${t}</li>`).join("");
+  $("themes").innerHTML = d.top_improvement_themes.map(t => `<li>${esc(t)}</li>`).join("");
   $("progBar").style.width = "100%";
 });
 
