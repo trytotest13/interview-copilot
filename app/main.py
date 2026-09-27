@@ -1,4 +1,4 @@
-"""Interview Copilot — resume + JD -> questions -> spoken answers -> rubric grading -> report.
+"""Interview Copilot: resume + JD -> questions -> spoken answers -> rubric grading -> report.
 
 Sessions live in memory (v1). Roadmap: Postgres-backed sessions + auth.
 """
@@ -83,7 +83,7 @@ async def setup(
     if len(jd) > MAX_JD_CHARS:
         jd = jd[:MAX_JD_CHARS]
     if len(resume) < 100:
-        raise HTTPException(400, "Resume is too short — upload a PDF or paste at least 100 characters")
+        raise HTTPException(400, "Resume is too short: upload a PDF or paste at least 100 characters")
     if len(jd) < 80:
         raise HTTPException(400, "Paste the full job description (at least 80 characters)")
 
@@ -109,7 +109,7 @@ class GradeIn(BaseModel):
 def grade(body: GradeIn) -> dict:
     session = SESSIONS.get(body.session_id)
     if not session:
-        raise HTTPException(404, "Session not found — set up the interview again")
+        raise HTTPException(404, "Session not found: set up the interview again")
     question = next((q for q in session["questions"] if q["id"] == body.question_id), None)
     if not question:
         raise HTTPException(404, "Unknown question id")
