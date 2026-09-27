@@ -1,43 +1,33 @@
-# Interview Copilot — Voice Interview Prep (Web Speech API + LLM grading)
+# Interview Copilot
 
-**The self-referential one interviewers love.** Upload your resume + paste the job description → get the 8 questions you're most likely to be asked → answer **out loud** (browser speech-to-text, zero cost) → each answer is graded on a 4-axis rubric with strengths, improvements and a model answer → final report with your average and top improvement themes.
+Practice interviews out loud. Upload your resume, paste a job description, and the app generates the 8 questions a phone screen would probably include (5 technical aimed at where the JD overlaps your resume, 2 behavioral, 1 project deep dive). You answer by speaking, the browser turns speech into text, and each answer is graded with a score, strengths, improvements and a model answer. At the end you get an average and the recurring themes to work on.
 
-## Why this design
+I built it to prepare for my own interviews, which also made it a good test case: I was the first user.
 
-- **Web Speech API** for STT: no Whisper GPU, no API cost, works in Chrome/Edge with a fallback to typing. (Roadmap: faster-whisper for privacy + more browsers.)
-- **Resume-grounded grading**: the grader sees the resume and JD, so "use specifics from your actual projects" is enforceable, not aspirational.
-- **Fixed rubric** (`evals/rubric.md`): correctness 40% · resume evidence 25% · structure 20% · communication 15% — the same weights are in the prompt and the doc, so scores are consistent.
+## Why browser speech recognition
 
-## Flow
+The Web Speech API costs nothing, needs no GPU, and works in Chrome and Edge with a permission prompt. The transcript is editable before grading, which matters because recognition errors should not cost you points. Swapping in faster-whisper later would add privacy and browser independence, at the cost of running a model locally.
 
-```mermaid
-flowchart LR
-  R[Resume PDF] --> Q[8 questions:<br/>5 technical · 2 behavioral · 1 deep-dive]
-  J[Job description] --> Q
-  Q --> M[🎤 speak your answer<br/>Web Speech API]
-  M --> T[editable transcript]
-  T --> G[Grader LLM<br/>4-axis rubric → 0-10]
-  G --> F[Feedback: strengths,<br/>improvements, model answer]
-  F --> RPT[Report: average +<br/>top improvement themes]
+## Grading
+
+Each answer is scored 0 to 10 against a fixed rubric (see `evals/rubric.md`):
+
+- Correctness, 40%
+- Evidence grounded in your actual resume, 25%
+- Structure (STAR for behavioral, claim-example-result for technical), 20%
+- Communication, 15%
+
+The grader sees the resume and the job description, so "use specifics from your projects" is something it can actually check rather than generic advice. The same weights live in the prompt and in the rubric file.
+
+## Running it
+
 ```
-
-## Run it
-
-```bash
 python -m venv .venv
 .venv/Scripts/pip install -r requirements.txt
-cp .env.example .env                        # set OPENAI_API_KEY
+cp .env.example .env    # set OPENAI_API_KEY
 .venv/Scripts/python -m uvicorn app.main:app --reload
-# open http://localhost:8000 in Chrome/Edge (allow mic access)
 ```
 
-## Resume bullet
+Open http://localhost:8000 in Chrome or Edge and allow microphone access. Any OpenAI-compatible provider works via `OPENAI_BASE_URL` and `LLM_MODEL`.
 
-> Built a voice interview-prep copilot (Web Speech API + LLM grading) that scores spoken answers against a 4-axis rubric and generates a per-session improvement report; X mock interviews run during my own job hunt.
-
-## Roadmap
-
-- [ ] Auth + session history in Postgres
-- [ ] RAG over your resume (pgvector) for deeper project questions — reuses DocuMind components
-- [ ] faster-whisper STT + TTS playback of questions (full voice loop)
-- [ ] Export report as PDF
+Sessions are held in memory for now, so a restart clears them. Adding a database is the obvious next step, along with answer history so you can see whether your scores actually improve across sessions.
