@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Interview Copilot — practice out loud</title>
+  <style>
+    :root { color-scheme: light; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: ui-sans-serif, system-ui, "Segoe UI", Roboto, sans-serif;
+           background: #f8fafc; color: #0f172a; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 28px 16px 64px; }
+    h1 { font-size: 22px; margin: 0; } h1 span { color: #4f6ef7; }
+    .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px;
+            margin-top: 16px; box-shadow: 0 1px 2px rgb(15 23 42 / .05); }
+    label { font-size: 13px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px; }
+    textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px;
+               font-size: 14px; font-family: inherit; outline: none; resize: vertical; }
+    textarea:focus { border-color: #4f6ef7; box-shadow: 0 0 0 3px #eef4ff; }
+    button { border: 0; border-radius: 10px; background: #4f6ef7; color: #fff; font-weight: 600;
+             font-size: 14px; padding: 12px 18px; cursor: pointer; }
+    button:disabled { opacity: .5; cursor: default; }
+    .mic { width: 84px; height: 84px; border-radius: 50%; font-size: 34px; background: #eef4ff;
+           color: #3244c4; border: 2px solid #4f6ef7; }
+    .mic.rec { background: #fee2e2; color: #b91c1c; border-color: #ef4444; animation: pulse 1.2s infinite; }
+    @keyframes pulse { 50% { transform: scale(1.06); } }
+    .center { text-align: center; }
+    .focus-tag { display: inline-block; background: #eef4ff; color: #3244c4; border-radius: 6px;
+                 padding: 2px 8px; font-size: 12px; font-weight: 600; }
+    .progress { height: 6px; background: #e2e8f0; border-radius: 999px; overflow: hidden; margin: 10px 0; }
+    .progress i { display: block; height: 100%; background: #4f6ef7; }
+    .badge { display: inline-block; border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: 13px; }
+    .strong { background: #dcfce7; color: #15803d; } .ok { background: #fef9c3; color: #a16207; }
+    .weak { background: #fee2e2; color: #b91c1c; }
+    ul { padding-left: 20px; font-size: 14px; line-height: 1.5; }
+    details summary { cursor: pointer; font-size: 13px; color: #4f6ef7; font-weight: 600; margin-top: 10px; }
+    .hidden { display: none; }
+    .muted { color: #64748b; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Interview <span>Copilot</span></h1>
+    <p class="muted">Upload your resume + the JD → 8 likely interview questions → answer <b>out loud</b> (speech-to-text) → graded on a 4-axis rubric.</p>
+
+    <!-- STEP 1: setup -->
+    <div class="card" id="setup">
+      <label>Your resume (PDF or paste)</label>
+      <input type="file" id="resumeFile" accept=".pdf,.txt,.md" style="font-size:13px" />
+      <textarea id="resumeText" rows="3" placeholder="…or paste your resume text here" style="margin-top:8px"></textarea>
+      <label style="margin-top:12px">Job description</label>
+      <textarea id="jdText" rows="4" placeholder="Paste the full job description here…"></textarea>
+      <div class="center" style="margin-top:14px">
+        <button id="genBtn">Generate 8 interview questions</button>
+        <div id="setupErr" class="muted" style="color:#b91c1c;margin-top:8px"></div>
+      </div>
+    </div>
+
+    <!-- STEP 2: Q&A -->
+    <div class="card hidden" id="qa">
+      <div class="progress"><i id="progBar" style="width:0%"></i></div>
+      <span class="muted" id="counter"></span> <span class="focus-tag" id="focusTag"></span>
+      <h2 id="question" style="font-size:18px;margin:10px 0 16px"></h2>
+      <div class="center">
+        <button class="mic" id="micBtn" title="Click and speak">🎤</button>
+        <p class="muted" id="micHint">Click the mic, answer out loud, click again to stop. (Chrome/Edge)</p>
+      </div>
+      <textarea id="transcript" rows="6" placeholder="Your answer appears here — edit freely before grading…"></textarea>
+      <div class="center" style="margin-top:12px">
+        <button id="gradeBtn">Grade my answer</button>
+        <button id="nextBtn" class="hidden" style="margin-left:8px">Next question →</button>
+      </div>
+    </div>
+
+    <!-- STEP 3: feedback -->
+    <div class="card hidden" id="feedback">
+      <span class="badge" id="scoreBadge">–</span>
+      <h3 style="margin:12px 0 6px">Strengths</h3><ul id="strengths"></ul>
+      <h3 style="margin:12px 0 6px">Improvements</h3><ul id="improvements"></ul>
+      <details><summary>Show a model answer</summary><p id="sample" style="font-size:14px;line-height:1.5"></p></details>
+      <p class="muted" id="running" style="margin-top:12px"></p>
+    </div>
+
+    <!-- STEP 4: report -->
+    <div class="card hidden center" id="report">
+      <h2>Interview complete 🎉</h2>
+      <p style="font-size:44px;font-weight:800;margin:8px 0" id="finalScore">–</p>
+      <p class="muted" id="finalDetail"></p>
+      <ul id="themes" style="text-align:left"></ul>
+      <button id="copyBtn">Copy report</button>
+    </div>
+  </div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+let sessionId = null, questions = [], qi = 0, grades = [], jd = "", resume = "";
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let recog = null, recording = false;
+
+$("micBtn").disabled = !SR;
+if (!SR) $("micHint").textContent = "Speech recognition not supported in this browser — type your answer instead (Chrome/Edge have mic support).";
+
+$("micBtn").addEventListener("click", () => {
+  if (recording) { recog.stop(); return; }
+  recog = new SR();
+  recog.continuous = true; recog.interimResults = true; recog.lang = "en-US";
+  let base = $("transcript").value;
+  recog.onresult = (e) => {
+    let interim = "", finalTxt = "";
+    for (const r of e.results) (r.isFinal ? finalTxt += r[0].transcript : interim += r[0].transcript);
+    $("transcript").value = (base + " " + finalTxt).trim() + (interim ? " " + interim : "");
+  };
+  recog.onend = () => { recording = false; $("micBtn").classList.remove("rec"); $("micHint").textContent = "Stopped. Edit the transcript if needed, then grade."; };
+  recog.onerror = recog.onend;
+  recog.start();
+  recording = true; $("micBtn").classList.add("rec"); $("micHint").textContent = "Listening… speak now.";
+});
+
+$("genBtn").addEventListener("click", async () => {
+  $("setupErr").textContent = ""; $("genBtn").disabled = true;
+  const fd = new FormData();
+  fd.set("jd_text", $("jdText").value);
+  fd.set("resume_text", $("resumeText").value);
+  const f = $("resumeFile").files[0];
+  if (f) fd.set("resume_file", f);
+  try {
+    const r = await fetch("/api/setup", { method: "POST", body: fd });
+    const d = await r.json();
+    if (!r.ok) { $("setupErr").textContent = d.detail || "setup failed"; return; }
+    sessionId = d.session_id; questions = d.questions;
+    resume = $("resumeText").value; jd = $("jdText").value;
+    $("setup").classList.add("hidden"); $("qa").classList.remove("hidden");
+    showQuestion();
+  } finally { $("genBtn").disabled = false; }
+});
+
+function showQuestion() {
+  const q = questions[qi];
+  $("counter").textContent = `Question ${qi + 1} of ${questions.length}`;
+  $("focusTag").textContent = q.focus;
+  $("question").textContent = q.question;
+  $("transcript").value = "";
+  $("feedback").classList.add("hidden");
+  $("gradeBtn").classList.remove("hidden");
+  $("nextBtn").classList.add("hidden");
+  $("progBar").style.width = `${(qi / questions.length) * 100}%`;
+}
+
+$("gradeBtn").addEventListener("click", async () => {
+  $("gradeBtn").disabled = true;
+  try {
+    const r = await fetch("/api/grade", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ session_id: sessionId, question_id: questions[qi].id, answer: $("transcript").value }),
+    });
+    const d = await r.json();
+    if (!r.ok) { alert(d.detail || "grading failed"); return; }
+    grades.push(d);
+    $("feedback").classList.remove("hidden");
+    const badge = $("scoreBadge");
+    badge.textContent = `${d.score}/10 — ${d.verdict}`;
+    badge.className = "badge " + d.verdict;
+    $("strengths").innerHTML = d.strengths.map(s => `<li>${s}</li>`).join("") || "<li>—</li>";
+    $("improvements").innerHTML = d.improvements.map(s => `<li>${s}</li>`).join("") || "<li>—</li>";
+    $("sample").textContent = d.sample_answer;
+    $("running").textContent = `Running average: ${d.average} (${d.graded_count} graded)`;
+    $("gradeBtn").classList.add("hidden");
+    $("nextBtn").classList.remove("hidden");
+    $("nextBtn").textContent = qi + 1 < questions.length ? "Next question →" : "See final report →";
+  } finally { $("gradeBtn").disabled = false; }
+});
+
+$("nextBtn").addEventListener("click", async () => {
+  qi += 1;
+  if (qi < questions.length) { showQuestion(); return; }
+  $("qa").classList.add("hidden");
+  const r = await fetch(`/api/report/${sessionId}`);
+  const d = await r.json();
+  $("report").classList.remove("hidden");
+  $("finalScore").textContent = `${d.average}/10`;
+  $("finalDetail").textContent = `${d.questions_graded}/${d.questions_total} answers graded`;
+  $("themes").innerHTML = d.top_improvement_themes.map(t => `<li>${t}</li>`).join("");
+  $("progBar").style.width = "100%";
+});
+
+$("copyBtn").addEventListener("click", () => {
+  const text = `Interview Copilot report\nAverage: ${$("finalScore").textContent}\n` +
+    grades.map((g, i) => `Q${i + 1}: ${g.score}/10 (${g.verdict})`).join("\n") + "\n" +
+    "Themes:\n- " + $("themes").innerText.split("\n").filter(Boolean).join("\n- ");
+  navigator.clipboard.writeText(text);
+  $("copyBtn").textContent = "Copied ✓";
+});
+</script>
+</body>
+</html>
