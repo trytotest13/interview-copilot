@@ -31,3 +31,4 @@ cp .env.example .env    # set OPENAI_API_KEY
 Open http://localhost:8000 in Chrome or Edge and allow microphone access. Any OpenAI-compatible provider works via `OPENAI_BASE_URL` and `LLM_MODEL`.
 
 Sessions are held in memory for now, so a restart clears them. Adding a database is the obvious next step, along with answer history so you can see whether your scores actually improve across sessions.
+"# interview-copilot" 
