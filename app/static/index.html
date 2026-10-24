@@ -14,7 +14,7 @@
     .card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px;
             margin-top: 16px; box-shadow: 0 1px 2px rgb(15 23 42 / .05); }
     label { font-size: 13px; font-weight: 600; color: #334155; display: block; margin-bottom: 4px; }
-    textarea { width: 100%; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px;
+    textarea { width: 100%; font-size: 16px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 10px 12px;
                font-size: 14px; font-family: inherit; outline: none; resize: vertical; }
     textarea:focus { border-color: #0F172A; box-shadow: 0 0 0 3px #eef4ff; }
     button { border: 0; border-radius: 10px; background: #0F172A; color: #fff; font-weight: 600;
@@ -25,6 +25,8 @@
     .mic.rec { background: #fee2e2; color: #b91c1c; border-color: #ef4444; animation: pulse 1.2s infinite; }
     @keyframes pulse { 50% { transform: scale(1.06); } }
     .center { text-align: center; }
+    button { cursor: pointer; }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
     .focus-tag { display: inline-block; background: #F1F5F9; color: #0F172A; border-radius: 6px;
                  padding: 2px 8px; font-size: 11px; font-weight: 600;
                  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -49,9 +51,9 @@
     <div class="card" id="setup">
       <label>Your resume (PDF or paste)</label>
       <input type="file" id="resumeFile" accept=".pdf,.txt,.md" style="font-size:13px" />
-      <textarea id="resumeText" rows="3" placeholder="…or paste your resume text here" style="margin-top:8px"></textarea>
+      <textarea id="resumeText" rows="3" aria-label="Resume text" placeholder="…or paste your resume text here" style="margin-top:8px"></textarea>
       <label style="margin-top:12px">Job description</label>
-      <textarea id="jdText" rows="4" placeholder="Paste the full job description here…"></textarea>
+      <textarea id="jdText" rows="4" aria-label="Job description" placeholder="Paste the full job description here…"></textarea>
       <div class="center" style="margin-top:14px">
         <button id="genBtn">Generate 8 interview questions</button>
         <div id="setupErr" class="muted" style="color:#b91c1c;margin-top:8px"></div>
@@ -67,7 +69,7 @@
         <button class="mic" id="micBtn" title="Click and speak">🎤</button>
         <p class="muted" id="micHint">Click the mic, answer out loud, click again to stop. (Chrome/Edge)</p>
       </div>
-      <textarea id="transcript" rows="6" placeholder="Your answer appears here: edit freely before grading…"></textarea>
+      <textarea id="transcript" rows="6" aria-label="Your answer" placeholder="Your answer appears here: edit freely before grading…"></textarea>
       <div class="center" style="margin-top:12px">
         <button id="gradeBtn">Grade my answer</button>
         <button id="nextBtn" class="hidden" style="margin-left:8px">Next question →</button>

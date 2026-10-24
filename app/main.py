@@ -1,11 +1,13 @@
 """Interview Copilot: resume + JD -> questions -> spoken answers -> rubric grading -> report.
 
-Sessions live in memory (v1). Roadmap: Postgres-backed sessions + auth.
+Sessions live in memory (v1), capped at MAX_SESSIONS with oldest-first eviction.
+Roadmap: Postgres-backed sessions + auth.
 """
 from __future__ import annotations
 
 import os
 import uuid
+from collections import OrderedDict
 from pathlib import Path
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
@@ -18,7 +20,8 @@ app = FastAPI(title="Interview Copilot", version="0.1.0")
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
-SESSIONS: dict[str, dict] = {}
+SESSIONS: OrderedDict[str, dict] = OrderedDict()
+MAX_SESSIONS = 50
 
 MAX_RESUME_CHARS = 50_000
 MAX_JD_CHARS = 20_000
@@ -96,6 +99,8 @@ async def setup(
 
     session_id = uuid.uuid4().hex[:12]
     SESSIONS[session_id] = {"resume": resume, "jd": jd, "questions": questions, "grades": {}}
+    while len(SESSIONS) > MAX_SESSIONS:
+        SESSIONS.popitem(last=False)  # evict the oldest session
     return {"session_id": session_id, "questions": questions}
 
 
