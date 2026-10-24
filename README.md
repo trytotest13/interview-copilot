@@ -1,5 +1,11 @@
 # Interview Copilot
 
+[![FastAPI](https://img.shields.io/badge/FastAPI-latest-009688)](https://fastapi.tiangolo.com) [![Web Speech API](https://img.shields.io/badge/Web%20Speech-API-4285F4)](https://developer.mozilla.org/docs/Web/API/Web_Speech_API) [![Python](https://img.shields.io/badge/Python-3.11-3776AB)](https://python.org)
+
+![05-interview-copilot](docs/screenshot-setup.png)
+
+*The setup screen: resume plus job description in, eight likely questions out.*
+
 Practice interviews out loud. Upload your resume, paste a job description, and the app generates the 8 questions a phone screen would probably include (5 technical aimed at where the JD overlaps your resume, 2 behavioral, 1 project deep dive). You answer by speaking, the browser turns speech into text, and each answer is graded with a score, strengths, improvements and a model answer. At the end you get an average and the recurring themes to work on.
 
 I built it to prepare for my own interviews, which also made it a good test case: I was the first user.
